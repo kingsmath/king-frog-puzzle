@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>개구리 퍼즐킹 - 한국 양서류 퍼즐 게임</title>
+  <meta name="description" content="한국의 개구리와 도롱뇽을 만나는 양서류 퍼즐 게임 - 개구리 퍼즐킹">
+  <meta name="keywords" content="개구리, 도롱뇽, 양서류, 퍼즐, 게임, 한국 양서류">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="개구리 퍼즐킹 - 한국 양서류 퍼즐 게임">
+  <meta property="og:description" content="한국의 개구리와 도롱뇽을 만나는 양서류 퍼즐 게임">
+  <link href="https://fonts.googleapis.com/css2?family=Poor+Story&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --app-height: 100vh;
+      --frog-green: #3d8b37;
+      --frog-dark: #1b5e20;
+      --frog-light: #a5d6a7;
+      --pond: #0d47a1;
+      --accent: #8bc34a;
+      --accent2: #ffd54f;
+      --ink: #1a2e0a;
+      --panel-bg: rgba(249,251,231,0.97);
+    }
+    html,body{margin:0;padding:0;overflow:hidden;font-family:'Poor Story','Noto Sans KR',sans-serif;width:100%;height:100vh;height:var(--app-height);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;background:linear-gradient(135deg,#1b5e20 0%,#2e7d32 50%,#1a4f1a 100%)}
+    #top-area{flex:0 0 22%;min-height:100px;background:linear-gradient(180deg,#f9fbe7 0%,#dcedc8 100%);border-bottom:6px solid var(--frog-green);display:flex;justify-content:center;align-items:center;position:relative;z-index:10;box-shadow:0 6px 25px rgba(0,0,0,0.4)}
+    #top-area::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 22px,rgba(45,122,45,0.07) 22px,rgba(45,122,45,0.07) 23px);pointer-events:none}
+    #scoreboard-row{display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 15px;height:100%}
+    .player-group{display:flex;align-items:center;gap:12px;height:100%;flex:1}
+    .p1-group{justify-content:flex-start}
+    .p2-group{justify-content:flex-end}
+    .ref-img-large{height:82%;max-height:110px;min-height:75px;border:4px solid var(--frog-green);border-radius:10px;background:#fff;overflow:hidden;box-shadow:3px 3px 0 rgba(45,122,45,0.4),0 5px 15px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .ref-img-large img{width:100%;height:100%;object-fit:cover}
+    .animal-name-label{position:absolute;top:0;left:0;right:0;background:rgba(27,94,32,0.88);color:#ffd54f;font-family:'Poor Story',sans-serif;font-size:clamp(14px,2.5vw,24px);font-weight:900;text-align:center;padding:6px 10px;z-index:20;border-radius:4px 4px 0 0;text-shadow:0 2px 4px rgba(0,0,0,0.5);pointer-events:none;letter-spacing:1px}
+    .player-zone{display:flex;align-items:center;gap:10px;padding:8px 16px;border-radius:20px;min-width:160px;justify-content:center;position:relative}
+    .p1-zone{background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border:3px solid var(--frog-green);color:var(--frog-dark);box-shadow:3px 3px 0 rgba(45,122,45,0.3)}
+    .p2-zone{background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border:3px solid var(--pond);color:var(--pond);flex-direction:row-reverse;box-shadow:3px 3px 0 rgba(13,71,161,0.3)}
+    .player-label{font-size:clamp(13px,1.8vw,22px);font-weight:900;font-family:'Poor Story',sans-serif;white-space:nowrap}
+    .score{font-size:clamp(24px,3.2vw,48px);font-weight:900;margin:0 8px;line-height:1;font-family:'Poor Story',sans-serif}
+    .center-info{flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:0 15px}
+    .timer-container{text-align:center;width:140px}
+    .timer-label{color:var(--frog-green);font-size:clamp(12px,1.6vw,20px);margin-bottom:6px;font-weight:900;font-family:'Poor Story',sans-serif}
+    #timer-bar{width:100%;height:14px;background:rgba(0,0,0,0.1);border-radius:7px;overflow:hidden;border:2px solid rgba(45,122,45,0.3)}
+    #timer-fill{width:0%;height:100%;background:linear-gradient(90deg,#e8433a,#ffd54f,#4caf50);transition:width 1s linear}
+    #game-area-wrapper{flex:1;display:flex;justify-content:center;align-items:center;padding:12px;position:relative;overflow:hidden}
+    #game-area{width:100%;height:100%;display:flex;position:relative;gap:12px}
+    .table-bg{flex:1;border-radius:16px;border:6px solid rgba(255,255,255,0.2);position:relative;display:flex;justify-content:center;align-items:center;box-shadow:inset 0 0 40px rgba(0,0,0,0.4),0 4px 15px rgba(0,0,0,0.3)}
+    .left-table{background:radial-gradient(ellipse at 30% 30%,#2e7d32 0%,#1a4f1a 100%)}
+    .right-table{background:radial-gradient(ellipse at 70% 30%,#1565c0 0%,#0d47a1 100%)}
+    .divider{position:absolute;left:50%;top:10px;bottom:10px;width:3px;background:linear-gradient(180deg,transparent,rgba(139,195,74,0.5),rgba(139,195,74,0.8),rgba(139,195,74,0.5),transparent);transform:translateX(-50%);z-index:4;border-radius:2px}
+    .board{position:relative;box-shadow:0 10px 30px rgba(0,0,0,0.8);border:4px solid rgba(139,195,74,0.8);box-sizing:content-box;overflow:hidden;border-radius:4px}
+    .puzzle-piece{position:absolute;box-sizing:border-box;border:1px solid rgba(0,0,0,0.3);background-repeat:no-repeat;transition:left 0.15s ease-out,top 0.15s ease-out;touch-action:none;cursor:grab}
+    .puzzle-piece.dragging{transition:none;z-index:100;outline:3px solid var(--accent2);box-shadow:0 15px 35px rgba(0,0,0,0.6);cursor:grabbing;opacity:0.95}
+    .float-btn{position:fixed;top:190px;width:48px;height:48px;background:rgba(139,195,74,0.2);border:2px solid rgba(139,195,74,0.5);border-radius:50%;cursor:pointer;z-index:1000;display:flex;justify-content:center;align-items:center;color:#c8e6c9;font-size:22px;transition:all 0.2s;backdrop-filter:blur(4px)}
+    .float-btn:hover{background:rgba(139,195,74,0.35);transform:scale(1.1)}
+    .float-btn:active{transform:scale(0.95)}
+    #fullscreen-btn{right:20px}
+    #btn-home{left:20px}
+    .overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,35,10,0.88);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:100;backdrop-filter:blur(10px)}
+    .modal-content{background:var(--panel-bg);padding:20px 28px;border-radius:16px;border:3px solid var(--frog-green);display:flex;flex-direction:column;align-items:center;max-width:900px;width:96%;max-height:96vh;overflow-y:auto;box-shadow:8px 8px 0 rgba(45,122,45,0.25),0 20px 60px rgba(0,0,0,0.6);position:relative;color:var(--ink)}
+    .modal-content::-webkit-scrollbar{width:6px}
+    .modal-content::-webkit-scrollbar-thumb{background:var(--frog-green);border-radius:3px}
+    .game-title{font-family:'Poor Story',sans-serif;font-size:clamp(28px,4.5vw,52px)!important;margin:0 0 6px 0;font-weight:900;color:var(--frog-green);text-shadow:2px 2px 0 rgba(45,122,45,0.2);text-align:center;line-height:1.1}
+    .game-subtitle{font-size:clamp(12px,1.4vw,16px);color:var(--pond);font-weight:700;margin-bottom:14px;letter-spacing:2px;text-align:center;font-family:'Poor Story',sans-serif}
+    .tab-container{display:flex;background:rgba(45,122,45,0.08);border-radius:30px;padding:5px;margin-bottom:14px;width:100%;max-width:550px;border:2px solid rgba(45,122,45,0.2)}
+    .tab-btn{flex:1;padding:8px;font-size:clamp(13px,1.6vw,16px);font-weight:700;color:#777;background:transparent;border:none;border-radius:25px;cursor:pointer;transition:all 0.3s;font-family:'Poor Story',sans-serif}
+    .tab-btn.active{background:var(--frog-green);color:#fff;box-shadow:0 3px 10px rgba(45,122,45,0.4)}
+    .tab-content{width:100%;display:none;flex-direction:column;align-items:center;margin-bottom:16px}
+    .tab-content.active{display:flex;animation:fadeInUp 0.3s ease}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .random-box{width:100%;max-width:480px;border-radius:16px;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:3px dashed var(--frog-green);background:rgba(45,122,45,0.05)}
+    .random-mark{font-size:60px;line-height:1;animation:hopFrog 2s ease-in-out infinite}
+    @keyframes hopFrog{0%,100%{transform:translateY(0) rotate(-3deg) scale(1)}30%{transform:translateY(-15px) rotate(3deg) scale(1.1)}60%{transform:translateY(-5px) rotate(-2deg) scale(1.05)}}
+    .gallery-wrapper{width:100%;max-width:800px;background:rgba(45,122,45,0.05);padding:12px;border-radius:12px;border:2px solid rgba(45,122,45,0.2)}
+    .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;max-height:22vh;overflow-y:auto;padding-right:4px}
+    .gallery-grid::-webkit-scrollbar{width:5px}
+    .gallery-grid::-webkit-scrollbar-thumb{background:var(--frog-green);border-radius:3px}
+    .gallery-item{position:relative;border-radius:10px;overflow:hidden;border:3px solid transparent;cursor:pointer;transition:all 0.2s;background:#fff;display:flex;flex-direction:column;height:90px;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+    .gallery-item img{width:100%;height:72px;object-fit:cover}
+    .gallery-item .g-title{padding:4px 5px;font-size:10px;text-align:center;color:#444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;background:#f1f8e9;font-family:'Poor Story',sans-serif;flex:1;display:flex;align-items:center;justify-content:center}
+    .gallery-item:hover{transform:translateY(-2px);border-color:rgba(45,122,45,0.5)}
+    .gallery-item.active{border-color:var(--frog-green);box-shadow:0 0 12px rgba(45,122,45,0.5)}
+    .credit-row{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;align-items:center;margin-bottom:10px;padding:7px 10px;background:rgba(45,122,45,0.06);border-radius:10px;border:1px solid rgba(45,122,45,0.15)}
+    .credit-item{font-size:13px;font-weight:700;color:var(--frog-dark);font-family:'Poor Story',sans-serif}
+    .credit-link{font-size:12px;font-weight:700;color:var(--frog-green);text-decoration:none;padding:3px 8px;border-radius:20px;background:rgba(45,122,45,0.08);border:1px solid rgba(45,122,45,0.3);transition:all 0.2s;white-space:nowrap;font-family:'Poor Story',sans-serif}
+    .credit-link:hover{background:rgba(45,122,45,0.18);transform:translateY(-1px)}
+    .book-link{color:var(--pond);background:rgba(13,71,161,0.08);border-color:rgba(13,71,161,0.3)}
+    .book-link:hover{background:rgba(13,71,161,0.18)}
+    .settings-row{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;justify-content:center;width:100%;margin-bottom:12px}
+    .setting-group{display:flex;flex-direction:row;align-items:center;gap:8px;background:rgba(45,122,45,0.07);padding:6px 12px;border-radius:25px;border:2px solid rgba(45,122,45,0.15)}
+    .setting-title{font-size:14px;color:var(--frog-dark);font-weight:900;white-space:nowrap;font-family:'Poor Story',sans-serif}
+    .opt-group{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+    .opt-btn{padding:5px 11px;font-size:13px;font-weight:700;background:rgba(255,255,255,0.7);border:2px solid #ccc;border-radius:8px;color:#666;cursor:pointer;transition:all 0.2s;font-family:'Poor Story',sans-serif}
+    .opt-btn:hover{background:rgba(45,122,45,0.1)}
+    .opt-btn.active{background:var(--frog-green);color:#fff;border-color:var(--frog-green);box-shadow:0 0 8px rgba(45,122,45,0.4)}
+    .start-btn-row{display:flex;align-items:center;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+    .start-game-btn{padding:10px 26px;font-size:17px;font-weight:900;background:linear-gradient(135deg,#2d7a2d,#1b5e20);border:3px solid #fff;border-radius:50px;color:#fff;cursor:pointer;box-shadow:0 6px 20px rgba(45,122,45,0.5),4px 4px 0 rgba(45,122,45,0.3);transition:transform 0.1s,box-shadow 0.2s;font-family:'Poor Story',sans-serif;letter-spacing:1px}
+    .start-game-btn:hover{transform:scale(1.04) translateY(-2px);box-shadow:0 10px 30px rgba(45,122,45,0.6),4px 4px 0 rgba(45,122,45,0.3)}
+    .start-game-btn:active{transform:scale(0.97)}
+    #overlay-countdown{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,35,10,0.94);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:200;backdrop-filter:blur(10px)}
+    #countdown-image{max-height:42vh;max-width:95%;object-fit:contain;border:6px solid var(--accent2);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.8);margin-bottom:10px;display:none}
+    #countdown-animal-name{font-family:'Poor Story',sans-serif;font-size:clamp(22px,4vw,44px);color:var(--accent2);font-weight:900;margin-bottom:4px;text-align:center;letter-spacing:2px}
+    #countdown-sciname{font-size:clamp(11px,1.5vw,16px);color:#a5d6a7;font-style:italic;margin-bottom:8px;text-align:center}
+    #countdown-remember{font-size:clamp(16px,2.2vw,26px);color:#fff;font-weight:700;margin-bottom:12px;text-align:center;display:none;font-family:'Poor Story',sans-serif}
+    #countdown-number{font-size:120px;font-weight:900;color:white;text-shadow:0 0 40px rgba(255,255,255,0.5),0 10px 30px rgba(0,0,0,0.8);line-height:1;font-family:'Poor Story',sans-serif}
+    #countdown-text{font-size:clamp(16px,2vw,24px);color:var(--accent);font-weight:700;margin-bottom:14px;text-align:center;font-family:'Poor Story',sans-serif}
+    .loading-spinner{border:5px solid rgba(255,255,255,0.2);border-top:5px solid var(--accent);border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin:15px auto}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+    #overlay-random-select{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,35,10,0.92);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:200;backdrop-filter:blur(10px)}
+    .random-select-frog{font-size:80px;animation:bigHop 0.8s ease-in-out infinite alternate;margin-bottom:10px}
+    @keyframes bigHop{0%{transform:translateY(0) scale(1)}100%{transform:translateY(-20px) scale(1.1)}}
+    .random-select-title{font-family:'Poor Story',sans-serif;font-size:clamp(22px,4vw,42px);color:var(--accent2);font-weight:900;text-align:center;margin-bottom:8px}
+    .random-select-subtitle{font-family:'Poor Story',sans-serif;font-size:clamp(14px,2.2vw,24px);color:var(--frog-light);font-weight:700;text-align:center;animation:pulse 1.5s infinite}
+    .candidate-name{font-family:'Poor Story',sans-serif;font-size:clamp(20px,3.5vw,40px);color:#fff;font-weight:900;text-align:center;margin-top:14px;min-height:50px;animation:nameFlash 0.15s ease-in-out infinite}
+    @keyframes nameFlash{0%{opacity:1}50%{opacity:0.6}100%{opacity:1}}
+    .candidate-name.final{animation:none;color:var(--accent2);font-size:clamp(26px,5vw,56px);text-shadow:0 0 30px rgba(255,213,79,0.6)}
+    @keyframes pulse{0%,100%{opacity:0.7}50%{opacity:1}}
+    #overlay-end{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,35,10,0.92);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:200;backdrop-filter:blur(10px)}
+    .end-modal{background:var(--panel-bg);padding:24px 30px;border-radius:16px;border:3px solid var(--frog-green);display:flex;flex-direction:column;align-items:center;max-width:85vw;box-shadow:8px 8px 0 rgba(45,122,45,0.2),0 20px 60px rgba(0,0,0,0.7);color:var(--ink);text-align:center}
+    #end-artwork{max-height:35vh;max-width:100%;object-fit:contain;border:6px solid var(--frog-green);border-radius:8px;box-shadow:4px 4px 0 rgba(45,122,45,0.3),0 10px 30px rgba(0,0,0,0.5);margin-bottom:12px}
+    #win-title{font-family:'Poor Story',sans-serif;font-size:clamp(32px,5vw,56px);font-weight:900;margin-bottom:8px;color:var(--frog-green)}
+    .diff-btn{padding:10px 28px;font-size:18px;font-weight:700;background:var(--frog-green);border:2px solid var(--frog-green);border-radius:30px;color:#fff;cursor:pointer;transition:all 0.2s;font-family:'Poor Story',sans-serif}
+    .diff-btn:hover{transform:scale(1.05);box-shadow:0 5px 15px rgba(45,122,45,0.4)}
+    .info-panel{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,30,10,0.92);color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;box-sizing:border-box;text-align:center;opacity:0;transition:opacity 0.5s ease-in-out;z-index:50;backdrop-filter:blur(5px)}
+    .info-panel.visible{opacity:1}
+    .info-content{padding:20px;width:100%;max-height:100%;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .info-title{font-family:'Poor Story',sans-serif;font-size:clamp(18px,2.5vw,34px);font-weight:900;color:var(--accent2);margin-bottom:4px}
+    .info-sciname{font-size:clamp(10px,1.5vw,14px);color:#a5d6a7;margin-bottom:6px;font-style:italic}
+    .info-desc{font-size:clamp(11px,1.3vw,14px);line-height:1.6;color:#eee;margin-bottom:10px;word-break:keep-all;font-family:'Poor Story',sans-serif}
+    .quiz-panel{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,30,10,0.93);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:200;backdrop-filter:blur(6px);border-radius:4px}
+    .quiz-animal-label{font-family:'Poor Story',sans-serif;font-size:clamp(14px,2vw,22px);color:var(--accent2);font-weight:700;margin-bottom:6px;letter-spacing:1px}
+    .quiz-header{font-family:'Poor Story',sans-serif;font-size:clamp(15px,2vw,22px);color:#4caf50;font-weight:900;margin-bottom:10px;text-align:center;letter-spacing:1px}
+    .quiz-question-text{font-family:'Poor Story',sans-serif;font-size:clamp(13px,1.8vw,20px);color:#e8f5e9;font-weight:700;margin-bottom:20px;text-align:center;padding:0 10px;line-height:1.5;word-break:keep-all}
+    .ox-btn-group{display:flex;gap:20px;justify-content:center;width:90%}
+    .ox-btn{width:90px;height:90px;font-size:48px;font-weight:900;border-radius:50%;border:4px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+    .ox-btn.o-btn{border-color:#ff5252;color:#ff5252}
+    .ox-btn.x-btn{border-color:#448aff;color:#448aff}
+    .ox-btn:hover{transform:scale(1.12);box-shadow:0 0 20px rgba(255,255,255,0.3)}
+    .ox-btn.o-btn:hover{background:rgba(255,82,82,0.2)}
+    .ox-btn.x-btn:hover{background:rgba(68,138,255,0.2)}
+    .wrong-feedback{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(232,67,58,0.96);color:white;padding:12px 25px;border-radius:15px;font-size:clamp(14px,2vw,22px);font-weight:900;z-index:300;box-shadow:0 8px 25px rgba(0,0,0,0.5);pointer-events:none;animation:fadeUpOut 2.2s ease-in-out forwards;white-space:nowrap;font-family:'Poor Story',sans-serif}
+    @keyframes fadeUpOut{0%{opacity:0;transform:translate(-50%,-40%)}15%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-62%)}}
+    #overlay-amphibian-viewer{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(10,30,10,0.95);z-index:20000;font-family:'Poor Story',sans-serif;overflow:hidden;display:flex;flex-direction:column}
+    .viewer-header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:rgba(27,94,32,0.8);border-bottom:2px solid rgba(139,195,74,0.3)}
+    .viewer-title-bar{font-family:'Poor Story',sans-serif;font-size:clamp(16px,2.5vw,24px);color:var(--accent2);font-weight:900;letter-spacing:1px}
+    .viewer-close-btn{background:rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.3);border-radius:50%;width:40px;height:40px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+    .viewer-close-btn:hover{background:rgba(232,67,58,0.7)}
+    .viewer-main{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;overflow:hidden;padding:10px}
+    #viewer-img{max-height:60vh;max-width:90%;object-fit:contain;border-radius:12px;border:4px solid rgba(139,195,74,0.5);box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+    .viewer-info-box{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);background:rgba(10,30,10,0.85);backdrop-filter:blur(8px);border:1px solid rgba(139,195,74,0.3);border-radius:14px;padding:12px 24px;color:#fff;text-align:center;min-width:260px;max-width:90vw;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+    .viewer-animal-name{font-family:'Poor Story',sans-serif;font-size:clamp(18px,3vw,28px);color:var(--accent2);font-weight:900;margin-bottom:2px;letter-spacing:1px}
+    .viewer-sci-name{font-size:clamp(10px,1.4vw,14px);color:#a5d6a7;font-style:italic;margin-bottom:6px}
+    .viewer-desc{font-family:'Poor Story',sans-serif;font-size:clamp(11px,1.3vw,14px);color:#e8f5e9;line-height:1.5;word-break:keep-all}
+    .viewer-index-badge{font-size:12px;color:#aaa;margin-top:6px}
+    .viewer-nav-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.3);border-radius:50%;width:56px;height:56px;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;z-index:10;user-select:none}
+    .viewer-nav-btn:hover{background:rgba(255,255,255,0.8);color:#000}
+    .viewer-nav-prev{left:20px}
+    .viewer-nav-next{right:20px}
+    #overlay-ox-modal{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(10,30,10,0.92);z-index:25000;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:'Poor Story',sans-serif;backdrop-filter:blur(6px)}
+    .ox-modal-box{background:var(--panel-bg);border-radius:20px;border:3px solid var(--frog-green);padding:28px 32px;max-width:600px;width:92%;box-shadow:8px 8px 0 rgba(45,122,45,0.2),0 20px 60px rgba(0,0,0,0.7);text-align:center;position:relative}
+    .ox-modal-title{font-family:'Poor Story',sans-serif;font-size:clamp(20px,3vw,30px);color:var(--frog-green);font-weight:900;margin-bottom:16px}
+    .ox-q-number{font-size:13px;color:#888;margin-bottom:10px}
+    .ox-q-text{font-family:'Poor Story',sans-serif;font-size:clamp(15px,2.2vw,22px);color:var(--ink);font-weight:700;margin-bottom:20px;line-height:1.5;word-break:keep-all}
+    .ox-modal-btns{display:flex;gap:20px;justify-content:center;margin-bottom:16px}
+    .ox-modal-btn{width:100px;height:100px;font-size:52px;border-radius:50%;border:4px solid;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;background:transparent}
+    .ox-modal-btn.o{border-color:#e53935;color:#e53935}
+    .ox-modal-btn.x{border-color:#1565c0;color:#1565c0}
+    .ox-modal-btn:hover{transform:scale(1.1)}
+    .ox-modal-btn.o:hover{background:rgba(229,57,53,0.1)}
+    .ox-modal-btn.x:hover{background:rgba(21,101,192,0.1)}
+    .ox-feedback-box{padding:14px 20px;border-radius:12px;font-family:'Poor Story',sans-serif;font-size:clamp(14px,2vw,18px);line-height:1.5;word-break:keep-all;margin-bottom:14px}
+    .ox-feedback-box.correct{background:rgba(76,175,80,0.1);border:2px solid #4caf50;color:#1b5e20}
+    .ox-feedback-box.wrong{background:rgba(229,57,53,0.1);border:2px solid #e53935;color:#b71c1c}
+    .ox-score-display{font-family:'Poor Story',sans-serif;font-size:clamp(13px,1.8vw,18px);color:var(--frog-green);font-weight:900;margin-bottom:10px}
+    .ox-next-btn,.ox-close-btn{padding:10px 28px;font-size:17px;font-weight:700;border-radius:30px;border:2px solid;cursor:pointer;transition:all 0.2s;font-family:'Poor Story',sans-serif}
+    .ox-next-btn{background:var(--frog-green);border-color:var(--frog-green);color:#fff}
+    .ox-next-btn:hover{transform:scale(1.04)}
+    .ox-close-btn{background:transparent;border-color:#999;color:#666;margin-left:10px}
+    .ox-close-btn:hover{border-color:var(--frog-green);color:var(--frog-green)}
+    .ox-result-stars{font-size:40px;margin-bottom:8px}
+    .ox-result-title{font-family:'Poor Story',sans-serif;font-size:clamp(18px,3vw,28px);font-weight:900;color:var(--frog-green);margin-bottom:8px}
+    .ox-result-score{font-family:'Poor Story',sans-serif;font-size:clamp(14px,2.2vw,22px);color:#444;margin-bottom:16px}
+    .other-game-link{display:inline-block;margin-top:4px;font-size:13px;font-weight:700;color:#888;text-decoration:none;padding:5px 18px;border-radius:20px;border:1px solid #ccc;transition:all 0.2s;background:rgba(255,255,255,0.5);font-family:'Poor Story',sans-serif}
+    .other-game-link:hover{color:var(--frog-green);border-color:var(--frog-green);background:rgba(45,122,45,0.06)}
+    .hidden{display:none!important}
+  </style>
+</head>
+<body>
+
+<!-- TOP SCOREBOARD -->
+<div id="top-area">
+  <div id="scoreboard-row">
+    <div class="player-group p1-group">
+      <div class="ref-img-large"><img class="ref-image" src="" alt=""></div>
+      <div class="player-zone p1-zone">
+        <div class="player-label">🐸 개구리팀</div>
+        <div class="score" id="score-p1">0%</div>
+      </div>
+    </div>
+    <div class="center-info">
+      <div class="timer-container">
+        <div class="timer-label" id="txt-timer">진행 시간</div>
+        <div id="timer-bar"><div id="timer-fill"></div></div>
+      </div>
+    </div>
+    <div class="player-group p2-group">
+      <div class="player-zone p2-zone">
+        <div class="player-label">🦎 도롱뇽팀</div>
+        <div class="score" id="score-p2">0%</div>
+      </div>
+      <div class="ref-img-large"><img class="ref-image" src="" alt=""></div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME AREA -->
+<div id="game-area-wrapper">
+  <div id="game-area">
+    <div class="table-bg left-table"><div id="board-p1" class="board"></div></div>
+    <div class="divider"></div>
+    <div class="table-bg right-table"><div id="board-p2" class="board"></div></div>
+  </div>
+</div>
+
+<!-- FLOAT BUTTONS -->
+<div id="btn-home" class="float-btn" title="처음으로">🏠</div>
+<div id="fullscreen-btn" class="float-btn" onclick="toggleFullscreen()" title="전체화면">⛶</div>
+
+<!-- START OVERLAY -->
+<div id="overlay-start" class="overlay">
+  <div class="modal-content">
+    <div class="game-title">🐸 개구리 퍼즐킹</div>
+    <div class="game-subtitle">한국 양서류 사진 퍼즐 게임 🦎</div>
+    <div class="tab-container">
+      <button class="tab-btn active" data-tab="tab-random" onclick="switchTab('tab-random')">🎲 랜덤 양서류</button>
+      <button class="tab-btn" data-tab="tab-select" onclick="switchTab('tab-select')">🐸 양서류 선택</button>
+    </div>
+    <div id="tab-random" class="tab-content active">
+      <div class="random-box">
+        <div class="random-mark">🐸</div>
+        <div style="font-size:18px;color:var(--frog-green);font-weight:900;font-family:'Poor Story',sans-serif">개구리? 도롱뇽?</div>
+        <div style="font-size:15px;color:var(--frog-green);font-weight:900;font-family:'Poor Story',sans-serif;text-align:center">누굴 만날까요? 🤩</div>
+        <div style="font-size:13px;color:#666;text-align:center;line-height:1.6">랜덤으로 한국 양서류가 선택됩니다!<br>퍼즐을 맞추고 양서류를 알아가세요 🌿</div>
+      </div>
+    </div>
+    <div id="tab-select" class="tab-content">
+      <div class="gallery-wrapper">
+        <div class="gallery-grid" id="gallery-grid-amphibians"></div>
+      </div>
+    </div>
+    <div class="credit-row">
+      <span class="credit-item">📸 사진 : 변영호 선생님</span>
+      <a class="credit-link book-link" href="https://search.shopping.naver.com/book/catalog/38615242621" target="_blank" rel="noopener">📗 사마귀 생태 도감</a>
+      <a class="credit-link book-link" href="https://search.shopping.naver.com/book/catalog/32467274214" target="_blank" rel="noopener">📘 긴꼬리투구새우가 궁금해?</a>
+    </div>
+    <div class="settings-row">
+      <div class="setting-group">
+        <div class="setting-title">⏱ 제한 시간</div>
+        <div class="opt-group" id="time-options">
+          <button class="opt-btn" onclick="selectTime(60,this)">1분</button>
+          <button class="opt-btn" onclick="selectTime(120,this)">2분</button>
+          <button class="opt-btn active" onclick="selectTime(180,this)">3분</button>
+          <button class="opt-btn" onclick="selectTime(300,this)">5분</button>
+          <button class="opt-btn" onclick="selectTime(0,this)">무제한</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-title">🧩 난이도</div>
+        <div class="opt-group" id="grid-options">
+          <button class="opt-btn active" onclick="selectGrid(3,this)">3×3</button>
+          <button class="opt-btn" onclick="selectGrid(4,this)">4×4</button>
+          <button class="opt-btn" onclick="selectGrid(5,this)">5×5</button>
+          <button class="opt-btn" onclick="selectGrid(7,this)">7×7</button>
+          <button class="opt-btn" onclick="selectGrid(10,this)">10×10</button>
+        </div>
+      </div>
+    </div>
+    <div class="start-btn-row">
+      <button class="start-game-btn" onclick="startSequence()">🐸 게임 시작!</button>
+      <button class="start-game-btn" onclick="openAmphibianViewer()" style="background:linear-gradient(135deg,#1565c0,#0d47a1);box-shadow:0 6px 20px rgba(13,71,161,0.5),4px 4px 0 rgba(13,71,161,0.3)">🦎 양서류 보기</button>
+      <button class="start-game-btn" onclick="openOxQuizModal()" style="background:linear-gradient(135deg,#f57c00,#e65100);box-shadow:0 6px 20px rgba(230,81,0,0.5),4px 4px 0 rgba(230,81,0,0.3)">❓ 양서류 퀴즈</button>
+    </div>
+    <a href="https://킹수학.com" class="other-game-link">🎮 다른 게임 고르기</a>
+  </div>
+</div>
+
+<!-- RANDOM SELECT OVERLAY -->
+<div id="overlay-random-select" class="hidden">
+  <div class="random-select-frog">🐸</div>
+  <div class="random-select-title">개구리? 도롱뇽?<br>누굴 만날까요?</div>
+  <div class="random-select-subtitle">두구두구두구... 🥁</div>
+  <div class="candidate-name" id="candidate-name-display">?</div>
+</div>
+
+<!-- COUNTDOWN OVERLAY -->
+<div id="overlay-countdown" class="hidden">
+  <div id="countdown-text">이미지 로딩 중...</div>
+  <div class="loading-spinner hidden" id="loading-indicator"></div>
+  <div id="countdown-animal-name"></div>
+  <div id="countdown-sciname"></div>
+  <img id="countdown-image" src="" alt="양서류">
+  <div id="countdown-remember">🌿 이 친구를 잘 기억하세요!</div>
+  <div id="countdown-number">5</div>
+</div>
+
+<!-- END OVERLAY -->
+<div id="overlay-end" class="hidden">
+  <div class="end-modal">
+    <div id="win-title"></div>
+    <img id="end-artwork" src="" alt="완성된 양서류">
+    <div id="end-animal-name" style="font-family:'Poor Story',sans-serif;font-size:clamp(20px,3vw,32px);font-weight:900;color:var(--frog-green);margin-bottom:4px"></div>
+    <div id="end-sciname" style="font-size:clamp(12px,1.5vw,16px);color:#888;font-style:italic;margin-bottom:16px"></div>
+    <button class="diff-btn" onclick="document.getElementById('btn-home').click()">🐸 다시 도전!</button>
+  </div>
+</div>
+
+<!-- AMPHIBIAN VIEWER -->
+<div id="overlay-amphibian-viewer" class="hidden">
+  <div class="viewer-header">
+    <div class="viewer-title-bar">🐸 한국 양서류 도감</div>
+    <button class="viewer-close-btn" onclick="closeAmphibianViewer()">✕</button>
+  </div>
+  <div class="viewer-main">
+    <button class="viewer-nav-btn viewer-nav-prev" onclick="prevAmphibian()">◀</button>
+    <img id="viewer-img" src="" alt="양서류">
+    <button class="viewer-nav-btn viewer-nav-next" onclick="nextAmphibian()">▶</button>
+    <div class="viewer-info-box">
+      <div class="viewer-animal-name" id="viewer-animal-name">이름</div>
+      <div class="viewer-sci-name" id="viewer-sci-name">학명</div>
+      <div class="viewer-desc" id="viewer-desc">설명</div>
+      <div class="viewer-index-badge" id="viewer-index">(1 / 15)</div>
+    </div>
+  </div>
+</div>
+
+<!-- OX QUIZ MODAL -->
+<div id="overlay-ox-modal" class="hidden">
+  <div class="ox-modal-box">
+    <div class="ox-modal-title">🐸 양서류 OX 퀴즈!</div>
+    <div class="ox-q-number" id="ox-q-number">1 / 10</div>
+    <div class="ox-q-text" id="ox-q-text">문제가 여기에 나옵니다.</div>
+    <div class="ox-modal-btns" id="ox-modal-btns">
+      <button class="ox-modal-btn o" onclick="answerOxModal(true)">⭕</button>
+      <button class="ox-modal-btn x" onclick="answerOxModal(false)">❌</button>
+    </div>
+    <div class="ox-feedback-box hidden" id="ox-feedback-box"></div>
+    <div class="ox-score-display" id="ox-score-display"></div>
+    <div id="ox-btn-row">
+      <button class="ox-next-btn" id="ox-next-btn" onclick="nextOxQuestion()">다음 문제 →</button>
+      <button class="ox-close-btn" onclick="closeOxQuizModal()">닫기</button>
+    </div>
+    <div id="ox-result-box" class="hidden">
+      <div class="ox-result-stars" id="ox-result-stars">⭐⭐⭐</div>
+      <div class="ox-result-title" id="ox-result-title">훌륭해요!</div>
+      <div class="ox-result-score" id="ox-result-score"></div>
+      <button class="ox-next-btn" onclick="restartOxQuiz()">🔄 다시 풀기</button>
+      <button class="ox-close-btn" onclick="closeOxQuizModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const amphibianDB=[
+  {file:"계곡산개구리.png",name:"계곡산개구리",sciName:"Rana huanrenensis",category:"개구리류",desc:"몸길이는 약 6~7cm이며, 눈 뒤쪽까지 이어지는 뚜렷한 검은색 반점이 특징입니다. 배와 턱 밑은 연회색 바탕에 검은색 반문이 흩어져 있습니다."},
+  {file:"금개구리.png",name:"금개구리",sciName:"Pelophylax chosenicus",category:"개구리류",desc:"등 쪽에 둥근 융기가 촘촘히 있으며, 홍채는 황금색 가루를 뿌린 듯한 모습입니다. 고막은 검은빛을 띤 갈색의 타원형이며 둘레에 가는 융기가 있습니다."},
+  {file:"도롱뇽.png",name:"도롱뇽",sciName:"Hynobius leechii",category:"도롱뇽류",desc:"머리가 둥글고 납작하며 매끄러운 피부를 가졌고 앞발가락 4개, 뒷발가락 5개로 구성됩니다. 입천장의 서개구치열이 V자형인 것이 주요 특징입니다."},
+  {file:"두꺼비.png",name:"두꺼비",sciName:"Bufo gargarizans",category:"개구리류",desc:"몸길이 8~11cm로 개구리 중에서 가장 크며 등에는 불규칙한 돌기가 많이 나 있습니다. 돌기 끝은 흑색이며 몸 전체에 불규칙한 흑갈색 또는 적갈색 무늬가 있습니다."},
+  {file:"맹꽁이.png",name:"맹꽁이",sciName:"Kaloula borealis",category:"개구리류",desc:"몸의 등면은 황색 바탕에 연한 청색을 띠고 있으며 배면에는 연한 흑색의 얼룩무늬가 있습니다. 장마철이 되면 땅 위로 나와 활동하며 짝짓기를 합니다."},
+  {file:"무당개구리.png",name:"무당개구리",sciName:"Bombina orientalis",category:"개구리류",desc:"배는 청색이나 담갈색을 띠며 피부에 작은 혹이 많습니다. 비단개구리라고도 불리며 고인 물의 수초에 알을 낳습니다."},
+  {file:"수원청개구리.png",name:"수원청개구리",sciName:"Dryophytes suweonensis",category:"개구리류",desc:"몸길이 2.5~4cm 정도로 한국에서 가장 작은 개구리이며 등은 녹색, 배는 백색을 띱니다. 주로 논 주변 평지에 서식합니다."},
+  {file:"양산꼬리치레도롱뇽.png",name:"양산꼬리치레도롱뇽",sciName:"Onychodactylus sillanus",category:"도롱뇽류",desc:"대한민국 고유종으로 붉은색이나 갈색 바탕에 노란색 또는 주황색 점무늬가 있습니다. 서식지 파괴로 인해 현재는 금정산 일대에만 서식하는 것으로 추정됩니다."},
+  {file:"옴개구리.png",name:"옴개구리",sciName:"Glandirana emeljanovi",category:"개구리류",desc:"몸길이는 40~55mm이며 등면에 불규칙한 흑색 무늬가 산재해 있습니다. 등 피부에는 평행으로 배열된 융기와 입상 돌기가 있으며 전국적으로 분포합니다."},
+  {file:"제주도롱뇽.png",name:"제주도롱뇽",sciName:"Hynobius quelpaertensis",category:"도롱뇽류",desc:"얼룩무늬가 있는 갈색 몸을 가졌으며 수컷은 암컷보다 앞다리가 굵고 등에 검은빛이 돕니다. 수컷의 몸길이는 8~14cm 정도로 자랍니다."},
+  {file:"참개구리.png",name:"참개구리",sciName:"Pelophylax nigromaculatus",category:"개구리류",desc:"몸길이 6~9cm로 우리나라에서 가장 흔한 개구리입니다. 등 바탕색 변이가 심하며, 주둥이 끝에서 항문까지 이어지는 밝은 중앙선이 특징입니다."},
+  {file:"청개구리.png",name:"청개구리",sciName:"Dryophytes japonicus",category:"개구리류",desc:"몸길이 2.5~4cm의 작은 개구리로 발가락 끝에 큰 흡반이 있어 나무나 풀잎에 잘 기어오릅니다. 등은 보통 녹색이지만 주위 환경에 따라 색이 변합니다."},
+  {file:"큰산개구리.png",name:"큰산개구리",sciName:"Rana uenoi",category:"개구리류",desc:"몸길이 5~8.5cm로 한국산 산개구리류 중 가장 큰 종입니다. 겨울잠에서 가장 먼저 깨어나며 등은 황토색부터 적갈색까지 다양합니다."},
+  {file:"한국산개구리.png",name:"한국산개구리",sciName:"Rana coreana",category:"개구리류",desc:"몸길이 38~44mm로 한국의 산개구리류 중 가장 작은 종이며 한국 고유종에 가깝습니다. 주둥이가 뾰족하고 날씬하며 갈색 계열의 몸통을 가집니다."},
+  {file:"황소개구리.png",name:"황소개구리",sciName:"Lithobates catesbeianus",category:"개구리류",desc:"북아메리카 원산의 외래종으로 몸길이 15~20cm에 달하는 대형 개구리입니다. 왕성한 식성으로 토종 생태계를 교란하여 생태계교란 생물로 지정되어 있습니다."}
+];
+
+const oxQuizDB=[
+  {q:"개구리는 양서류에 속한다.",a:true,exp:"개구리는 물과 육지 모두에서 살 수 있는 양서류가 맞습니다."},
+  {q:"도롱뇽은 파충류이다.",a:false,exp:"도롱뇽은 양서류입니다."},
+  {q:"개구리는 허파로만 숨을 쉰다.",a:false,exp:"개구리는 허파뿐만 아니라 피부를 통해서도 숨을 쉽니다."},
+  {q:"도롱뇽의 꼬리가 잘리면 다시 자라난다.",a:true,exp:"도롱뇽은 신체 재생 능력이 있어 꼬리가 잘려도 다시 자라날 수 있습니다."},
+  {q:"개구리는 알을 낳을 때 물속에 낳는다.",a:true,exp:"대부분의 개구리는 물속이나 축축한 곳에 알을 낳습니다."},
+  {q:"도롱뇽은 알을 낳지 않고 새끼를 바로 낳는다.",a:false,exp:"도롱뇽도 개구리처럼 알을 낳는 난생 동물입니다."},
+  {q:"올챙이는 물속에서만 살 수 있다.",a:true,exp:"올챙이는 아가미로 숨을 쉬기 때문에 물속에서만 살 수 있습니다."},
+  {q:"모든 개구리는 독이 있다.",a:false,exp:"독이 있는 개구리도 있지만 없는 개구리가 훨씬 많습니다."},
+  {q:"도롱뇽은 다리가 4개이다.",a:true,exp:"도롱뇽은 앞다리 2개, 뒷다리 2개로 총 4개의 다리를 가지고 있습니다."},
+  {q:"개구리는 겨울이 되면 겨울잠을 잔다.",a:true,exp:"변온 동물인 개구리는 추운 겨울을 나기 위해 땅속이나 물속에서 겨울잠을 잡니다."},
+  {q:"개구리는 이빨이 전혀 없다.",a:false,exp:"개구리는 윗턱에 작은 이빨이 있는 종류가 많습니다."},
+  {q:"도롱뇽은 주로 육지에서만 평생을 산다.",a:false,exp:"도롱뇽은 번식기에는 물속에서 생활하며 성체가 되면 주로 습한 육지에서 생활합니다."},
+  {q:"개구리의 피부는 항상 촉촉하다.",a:true,exp:"피부 호흡을 해야 하므로 개구리의 피부는 항상 점액질로 덮여 촉촉합니다."},
+  {q:"도롱뇽은 소리를 낼 수 없다.",a:true,exp:"도롱뇽은 성대가 발달하지 않아 울음소리를 내지 못합니다."},
+  {q:"개구리 뒷다리는 앞다리보다 길고 튼튼하다.",a:true,exp:"멀리 뛰기 위해 뒷다리가 아주 발달해 있습니다."},
+  {q:"올챙이가 자라면 도롱뇽이 된다.",a:false,exp:"올챙이는 개구리가 되고, 도롱뇽은 도롱뇽의 알에서 태어난 유생이 자랍니다."},
+  {q:"도롱뇽은 긴 꼬리를 가지고 있다.",a:true,exp:"도롱뇽은 개구리와 달리 성체가 되어서도 긴 꼬리가 그대로 남아있습니다."},
+  {q:"개구리는 곤충을 잡아먹는 육식 동물이다.",a:true,exp:"개구리는 파리, 메뚜기 같은 곤충을 잡아먹는 육식성입니다."},
+  {q:"도롱뇽은 사람의 손으로 계속 만져도 안전하다.",a:false,exp:"사람의 체온은 도롱뇽에게 매우 뜨거우며 피부에 상처를 줄 수 있어 만지지 않는 것이 좋습니다."},
+  {q:"개구리는 허물을 벗는다.",a:true,exp:"개구리도 자라면서 낡은 피부를 벗는 허물 벗기를 합니다."},
+  {q:"개구리의 혀는 입 안쪽이 아니라 앞쪽에 붙어 있다.",a:true,exp:"먹이를 빨리 낚아채기 위해 혀뿌리가 입 앞쪽에 붙어 있습니다."},
+  {q:"도롱뇽은 물고기처럼 지느러미가 있다.",a:false,exp:"도롱뇽은 도마뱀과 비슷하게 생겼지만 지느러미는 없습니다."},
+  {q:"개구리는 주변 환경에 따라 몸 색깔을 바꾸기도 한다.",a:true,exp:"보호색을 띠어 포식자로부터 몸을 숨기기 위해 색을 바꾸는 능력이 있습니다."},
+  {q:"도롱뇽은 아주 깨끗한 물에서만 산다.",a:true,exp:"도롱뇽은 환경 변화에 예민하여 주로 1급수 같은 깨끗한 계곡에서 발견됩니다."},
+  {q:"개구리는 눈을 감고 음식을 삼킨다.",a:true,exp:"개구리는 먹이를 삼킬 때 눈을 입 안쪽으로 밀어 넣어 먹이를 목구멍으로 넘깁니다."},
+  {q:"도롱뇽도 올챙이 시기를 거친다.",a:true,exp:"도롱뇽의 유생도 올챙이와 비슷한 형태의 수중 생활 단계를 거칩니다."},
+  {q:"개구리는 뱀에게 잡아먹히지 않는다.",a:false,exp:"뱀은 개구리를 잡아먹는 대표적인 포식자입니다."},
+  {q:"도롱뇽은 껍데기가 딱딱한 알을 낳는다.",a:false,exp:"양서류의 알은 젤리처럼 말랑말랑한 막으로 싸여 있습니다."},
+  {q:"개구리는 척추가 있는 동물이다.",a:true,exp:"개구리는 척추동물 양서강에 속합니다."},
+  {q:"황소개구리는 한국의 토종 개구리이다.",a:false,exp:"황소개구리는 북아메리카에서 수입된 외래종으로 생태계교란 생물로 지정되어 있습니다."}
+];
+
+let gameState={p1:{boardId:'board-p1',pieces:[],domElements:[],isWinner:false,quizActive:false},p2:{boardId:'board-p2',pieces:[],domElements:[],isWinner:false,quizActive:false},imgData:null,imgRatio:1,imgReady:false,isPlaying:false,gridSize:3,timeLimit:180,timeRemaining:180,timeElapsed:0,timerIntv:null};
+let selectedGrid=3,selectedTime=180,currentMode='random',selectedGalleryItem=null;
+
+let frogAudio=null;
+function playFrogSound(){try{if(!frogAudio)frogAudio=new Audio('frog.mp3');frogAudio.currentTime=0;frogAudio.volume=0.7;frogAudio.play().catch(()=>{})}catch(e){}}
+
+function setAppHeight(){document.documentElement.style.setProperty('--app-height',`${window.innerHeight}px`)}
+window.addEventListener('resize',()=>{setAppHeight();resizeBoards()});
+setAppHeight();
+
+function toggleFullscreen(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{})}
+
+const AudioEngine={ctx:null,init(){if(!this.ctx)try{this.ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume()},
+playTone(freq,type,vol,dur){if(!this.ctx)return;try{const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.connect(g);g.connect(this.ctx.destination);o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,this.ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+dur);o.start();o.stop(this.ctx.currentTime+dur)}catch(e){}},
+playClack(){this.playTone(500,'sine',0.07,0.08)},
+playStart(){[392,523,659,784].forEach((f,i)=>setTimeout(()=>this.playTone(f,'sine',0.1,0.2),i*100))},
+playFanfare(){const m=[523,659,784,1046,784,1046,1318];m.forEach((f,i)=>setTimeout(()=>this.playTone(f,'sine',0.12,0.25),i*130))}};
+
+function switchTab(tabId){document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById(tabId).classList.add('active');document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');currentMode=tabId==='tab-random'?'random':'select';if(tabId==='tab-select')initGallery()}
+function selectTime(t,btn){selectedTime=t;document.querySelectorAll('#time-options .opt-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+function selectGrid(g,btn){selectedGrid=g;document.querySelectorAll('#grid-options .opt-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+
+function initGallery(){const grid=document.getElementById('gallery-grid-amphibians');grid.innerHTML='';amphibianDB.forEach(item=>{const div=document.createElement('div');div.className='gallery-item'+(selectedGalleryItem&&selectedGalleryItem.file===item.file?' active':'');div.innerHTML=`<img src="img/${item.file}" alt="${item.name}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'72\\'><rect fill=\\'%23ddd\\' width=\\'100\\' height=\\'72\\'/><text x=\\'50\\' y=\\'40\\' text-anchor=\\'middle\\' font-size=\\'24\\' fill=\\'%23999\\'>🐸</text></svg>'"><div class="g-title">${item.name}</div>`;div.onclick=()=>{document.querySelectorAll('.gallery-item').forEach(i=>i.classList.remove('active'));div.classList.add('active');selectedGalleryItem={...item,url:`img/${item.file}`}};grid.appendChild(div)})}
+
+function showRandomSelectAndStart(callback){const overlay=document.getElementById('overlay-random-select');const nameDisplay=document.getElementById('candidate-name-display');overlay.classList.remove('hidden');document.getElementById('overlay-start').classList.add('hidden');playFrogSound();const targetItem=amphibianDB[Math.floor(Math.random()*amphibianDB.length)];let shuffleCount=0;const maxShuffle=20;const nameEl=nameDisplay;const shuffleInterval=setInterval(()=>{const rnd=amphibianDB[Math.floor(Math.random()*amphibianDB.length)];nameEl.textContent=rnd.name;nameEl.className='candidate-name';shuffleCount++;if(shuffleCount>=maxShuffle){clearInterval(shuffleInterval);setTimeout(()=>{nameEl.textContent=targetItem.name;nameEl.className='candidate-name final';playFrogSound();setTimeout(()=>{overlay.classList.add('hidden');callback(targetItem)},1800)},300)}},120)}
+
+function setGameImageAndStart(item){gameState.imgReady=false;const fullItem={...item,url:item.url||`img/${item.file}`,title:item.name||item.title,displayName:item.name};gameState.imgData=fullItem;const img=new Image();const timeout=setTimeout(()=>{if(!gameState.imgReady){img.src='';const fallback=amphibianDB[Math.floor(Math.random()*amphibianDB.length)];setGameImageAndStart(fallback)}},5000);img.onload=()=>{clearTimeout(timeout);gameState.imgRatio=img.naturalWidth/img.naturalHeight;document.querySelectorAll('.ref-image').forEach(el=>el.src=fullItem.url);document.getElementById('end-artwork').src=fullItem.url;document.getElementById('end-animal-name').textContent=fullItem.name;document.getElementById('end-sciname').textContent=fullItem.sciName||'';gameState.imgReady=true};img.onerror=()=>{clearTimeout(timeout);const fallback=amphibianDB[Math.floor(Math.random()*amphibianDB.length)];setGameImageAndStart(fallback)};img.src=fullItem.url}
+
+function startSequence(){AudioEngine.init();gameState.gridSize=selectedGrid;gameState.timeLimit=selectedTime;gameState.timeRemaining=selectedTime;if(currentMode==='random'){showRandomSelectAndStart(item=>{const fullItem={...item,url:`img/${item.file}`};setGameImageAndStart(fullItem);beginCountdown(fullItem)})}else{if(!selectedGalleryItem){alert('양서류를 선택해주세요! 🐸');return}document.getElementById('overlay-start').classList.add('hidden');setGameImageAndStart(selectedGalleryItem);beginCountdown(selectedGalleryItem)}}
+
+function beginCountdown(item){const countOverlay=document.getElementById('overlay-countdown');countOverlay.classList.remove('hidden');const countNum=document.getElementById('countdown-number'),spinner=document.getElementById('loading-indicator'),countText=document.getElementById('countdown-text'),rememberText=document.getElementById('countdown-remember'),countImg=document.getElementById('countdown-image'),animalNameEl=document.getElementById('countdown-animal-name'),sciNameEl=document.getElementById('countdown-sciname');countNum.classList.add('hidden');spinner.classList.remove('hidden');countText.classList.remove('hidden');countImg.style.display='none';rememberText.style.display='none';animalNameEl.textContent='';sciNameEl.textContent='';let count=5;const checkReady=setInterval(()=>{if(gameState.imgReady){clearInterval(checkReady);spinner.classList.add('hidden');countText.classList.add('hidden');animalNameEl.textContent=item.name||item.title;sciNameEl.textContent=item.sciName||'';countImg.src=gameState.imgData.url;countImg.style.display='block';rememberText.style.display='block';countNum.textContent=count;countNum.classList.remove('hidden');const intv=setInterval(()=>{count--;if(count>0){countNum.textContent=count;AudioEngine.playTone(800,'sine',0.08,0.2)}else{clearInterval(intv);countOverlay.classList.add('hidden');startGame()}},1000)}},200)}
+
+function startGame(){AudioEngine.playStart();initBoard('p1');initBoard('p2');resizeBoards();gameState.isPlaying=true;gameState.timeElapsed=0;document.getElementById('score-p1').textContent='0%';document.getElementById('score-p2').textContent='0%';if(gameState.timerIntv)clearInterval(gameState.timerIntv);const timerFill=document.getElementById('timer-fill'),txtTimer=document.getElementById('txt-timer');if(gameState.timeLimit>0){timerFill.style.width='100%';timerFill.style.transition='width 1s linear';gameState.timerIntv=setInterval(()=>{gameState.timeRemaining--;const m=String(Math.floor(gameState.timeRemaining/60)).padStart(2,'0'),s=String(gameState.timeRemaining%60).padStart(2,'0');txtTimer.textContent=`${m}:${s}`;const pct=(gameState.timeRemaining/gameState.timeLimit)*100;timerFill.style.width=`${pct}%`;if(gameState.timeRemaining<=10){timerFill.style.background='#e8433a';if(gameState.timeRemaining>0)AudioEngine.playTone(1200,'sine',0.1,0.2)}else if(pct<=30)timerFill.style.background='#ffd54f';else timerFill.style.background='linear-gradient(90deg,#e8433a,#ffd54f,#4caf50)';if(gameState.timeRemaining<=0){clearInterval(gameState.timerIntv);handleTimeOut()}},1000)}else{timerFill.style.width='100%';timerFill.style.background='#4caf50';gameState.timerIntv=setInterval(()=>{gameState.timeElapsed++;const m=String(Math.floor(gameState.timeElapsed/60)).padStart(2,'0'),s=String(gameState.timeElapsed%60).padStart(2,'0');txtTimer.textContent=`${m}:${s}`},1000)}}
+
+function handleTimeOut(){gameState.isPlaying=false;document.querySelectorAll('.quiz-panel').forEach(p=>p.remove());let p1Score=getProgress(gameState.p1),p2Score=getProgress(gameState.p2);if(gameState.p1.quizActive)p1Score=100;if(gameState.p2.quizActive)p2Score=100;if(p1Score>p2Score){autoCompleteBoard(gameState.p1);endGameSequence('p1')}else if(p2Score>p1Score){autoCompleteBoard(gameState.p2);endGameSequence('p2')}else showOriginalEndOverlay('draw')}
+
+function autoCompleteBoard(pState){for(let i=0;i<pState.pieces.length;i++)pState.pieces[i]=i;updateVisuals(pState);document.getElementById(pState.boardId==='board-p1'?'score-p1':'score-p2').textContent='100%'}
+
+function resizeBoards(){['p1','p2'].forEach(player=>{const pState=gameState[player];const container=document.querySelector(player==='p1'?'.left-table':'.right-table');if(!container)return;const maxW=container.clientWidth-40,maxH=container.clientHeight-80;const containerRatio=maxW/maxH;const imgRatio=gameState.imgRatio||1;let boardW,boardH;if(imgRatio>containerRatio){boardW=maxW;boardH=maxW/imgRatio}else{boardH=maxH;boardW=maxH*imgRatio}const boardEl=document.getElementById(pState.boardId);boardEl.style.width=boardW+'px';boardEl.style.height=boardH+'px';updateVisuals(pState,boardW,boardH)})}
+
+function initBoard(playerKey){const pState=gameState[playerKey];const boardEl=document.getElementById(pState.boardId);boardEl.innerHTML='';pState.pieces=[];pState.domElements=[];pState.isWinner=false;pState.quizActive=false;const nameLabel=document.createElement('div');nameLabel.className='animal-name-label';nameLabel.textContent=gameState.imgData?(gameState.imgData.name||gameState.imgData.title):'';boardEl.appendChild(nameLabel);const total=gameState.gridSize*gameState.gridSize;for(let i=0;i<total;i++)pState.pieces.push(i);do{pState.pieces.sort(()=>Math.random()-0.5)}while(pState.pieces.every((v,i)=>v===i));for(let pieceId=0;pieceId<total;pieceId++){const pieceEl=document.createElement('div');pieceEl.className='puzzle-piece';pieceEl.dataset.player=playerKey;pieceEl.dataset.pieceId=pieceId;const origRow=Math.floor(pieceId/gameState.gridSize),origCol=pieceId%gameState.gridSize;const bgPosX=gameState.gridSize>1?(origCol/(gameState.gridSize-1))*100:0;const bgPosY=gameState.gridSize>1?(origRow/(gameState.gridSize-1))*100:0;pieceEl.style.backgroundImage=`url(${gameState.imgData.url})`;pieceEl.style.backgroundSize=`${gameState.gridSize*100}% ${gameState.gridSize*100}%`;pieceEl.style.backgroundPosition=`${bgPosX}% ${bgPosY}%`;attachDragEvents(pieceEl,pState);pState.domElements[pieceId]=pieceEl;boardEl.appendChild(pieceEl)}}
+
+const LABEL_H=36;
+function updateVisuals(pState,boardW,boardH){if(!pState.domElements||pState.domElements.length===0)return;const boardEl=document.getElementById(pState.boardId);const cW=boardW||boardEl.clientWidth,cH=boardH||boardEl.clientHeight;const availH=cH-LABEL_H;const pieceW=cW/gameState.gridSize,pieceH=availH/gameState.gridSize;for(let s=0;s<pState.pieces.length;s++){const pieceEl=pState.domElements[pState.pieces[s]];pieceEl.style.width=pieceW+'px';pieceEl.style.height=pieceH+'px';pieceEl.style.left=(s%gameState.gridSize*pieceW)+'px';pieceEl.style.top=(LABEL_H+Math.floor(s/gameState.gridSize)*pieceH)+'px';pieceEl.dataset.slotIndex=s}}
+
+let activeDrags={};
+function attachDragEvents(pieceEl,pState){pieceEl.addEventListener('pointerdown',e=>{if(!gameState.isPlaying||pState.quizActive)return;e.preventDefault();pieceEl.setPointerCapture(e.pointerId);pieceEl.classList.add('dragging');activeDrags[e.pointerId]={el:pieceEl,pState,slotIndex:parseInt(pieceEl.dataset.slotIndex),startX:e.clientX,startY:e.clientY}});pieceEl.addEventListener('pointermove',e=>{const drag=activeDrags[e.pointerId];if(!drag)return;drag.el.style.transform=`translate(${e.clientX-drag.startX}px,${e.clientY-drag.startY}px) scale(1.05)`});const drop=e=>{const drag=activeDrags[e.pointerId];if(!drag)return;drag.el.releasePointerCapture(e.pointerId);drag.el.style.transform='';drag.el.classList.remove('dragging');const boardEl=document.getElementById(pState.boardId);const rect=boardEl.getBoundingClientRect();let tCol=Math.max(0,Math.min(gameState.gridSize-1,Math.floor((e.clientX-rect.left)/(boardEl.clientWidth/gameState.gridSize))));let tRow=Math.max(0,Math.min(gameState.gridSize-1,Math.floor((e.clientY-rect.top-LABEL_H)/((boardEl.clientHeight-LABEL_H)/gameState.gridSize))));const tIdx=tRow*gameState.gridSize+tCol;if(tIdx!==drag.slotIndex&&tIdx>=0){const temp=pState.pieces[tIdx];pState.pieces[tIdx]=pState.pieces[drag.slotIndex];pState.pieces[drag.slotIndex]=temp;AudioEngine.playClack()}updateVisuals(pState);checkProgress(pState);delete activeDrags[e.pointerId]};pieceEl.addEventListener('pointerup',drop);pieceEl.addEventListener('pointercancel',drop)}
+
+function getProgress(pState){let correct=0;for(let i=0;i<pState.pieces.length;i++)if(pState.pieces[i]===i)correct++;return Math.floor(correct/pState.pieces.length*100)}
+
+function checkProgress(pState){if(pState.isWinner||pState.quizActive)return;const pct=getProgress(pState);document.getElementById(pState.boardId==='board-p1'?'score-p1':'score-p2').textContent=`${pct}%`;if(pct===100){pState.quizActive=true;showOxQuizOnBoard(pState)}}
+
+function getRandomOxQuiz(){return oxQuizDB[Math.floor(Math.random()*oxQuizDB.length)]}
+
+function showOxQuizOnBoard(pState){const boardEl=document.getElementById(pState.boardId);const quiz=getRandomOxQuiz();pState.currentQuiz=quiz;const quizPanel=document.createElement('div');quizPanel.className='quiz-panel';quizPanel.innerHTML=`<div class="quiz-animal-label">🐸 ${gameState.imgData?gameState.imgData.name:''}</div><div class="quiz-header">OX 양서류 퀴즈!</div><div class="quiz-question-text">${quiz.q}</div><div class="ox-btn-group"><button class="ox-btn o-btn" onpointerdown="answerBoardOx('${pState.boardId}',true)">⭕</button><button class="ox-btn x-btn" onpointerdown="answerBoardOx('${pState.boardId}',false)">❌</button></div>`;boardEl.appendChild(quizPanel)}
+
+function answerBoardOx(boardId,answer){const isP1=boardId==='board-p1';const playerKey=isP1?'p1':'p2';const pState=gameState[playerKey];const quiz=pState.currentQuiz;if(quiz&&answer===quiz.a){AudioEngine.playStart();const panel=document.querySelector(`#${boardId} .quiz-panel`);if(panel)panel.remove();pState.isWinner=true;endGame(playerKey)}else{AudioEngine.playTone(180,'sawtooth',0.2,0.5);const boardEl=document.getElementById(boardId);const feedback=document.createElement('div');feedback.className='wrong-feedback';feedback.textContent='❌ 틀렸어요! 다시 생각해봐요 🐸';boardEl.appendChild(feedback);setTimeout(()=>{if(feedback.parentNode)feedback.remove()},2200);const panel=document.querySelector(`#${boardId} .quiz-panel`);if(panel)panel.remove();pState.quizActive=false;if(pState.pieces.length>=2){const temp=pState.pieces[0];pState.pieces[0]=pState.pieces[1];pState.pieces[1]=temp}updateVisuals(pState);checkProgress(pState)}}
+
+function endGame(winnerCode){if(!gameState.isPlaying)return;gameState.isPlaying=false;if(winnerCode==='draw')showOriginalEndOverlay('draw');else endGameSequence(winnerCode)}
+
+function endGameSequence(winnerCode){if(gameState.timerIntv)clearInterval(gameState.timerIntv);document.querySelectorAll('.quiz-panel').forEach(p=>p.remove());AudioEngine.playFanfare();playFrogSound();const winnerBoardId=winnerCode==='p1'?'board-p1':'board-p2';document.querySelectorAll(`#${winnerBoardId} .puzzle-piece`).forEach(p=>p.style.border='none');triggerFireworks(winnerCode);setTimeout(()=>showInfoOnLoserSide(winnerCode),1000)}
+
+function triggerFireworks(winnerCode){const boardEl=document.getElementById(winnerCode==='p1'?'board-p1':'board-p2');const rect=boardEl.getBoundingClientRect();const x=(rect.left+rect.width/2)/window.innerWidth,y=(rect.top+rect.height/2)/window.innerHeight;const end=Date.now()+1800;(function frame(){confetti({particleCount:6,angle:60,spread:55,origin:{x:x-0.05,y},colors:['#4caf50','#8bc34a','#ffd54f','#fff','#2e7d32']});confetti({particleCount:6,angle:120,spread:55,origin:{x:x+0.05,y},colors:['#66bb6a','#ffd54f','#fff','#a5d6a7']});if(Date.now()<end)requestAnimationFrame(frame)}())}
+
+function showInfoOnLoserSide(winnerCode){const loserBoardId=winnerCode==='p1'?'board-p2':'board-p1';const loserBoard=document.getElementById(loserBoardId);const winnerState=gameState[winnerCode];const winnerQuiz=winnerState.currentQuiz;const item=gameState.imgData;const winnerLabel=winnerCode==='p1'?'🐸 개구리팀 승리!':'🦎 도롱뇽팀 승리!';let winnerQuizHTML='';if(winnerQuiz){winnerQuizHTML=`<div style="margin-top:12px;font-family:'Poor Story',sans-serif;font-size:clamp(11px,1.5vw,14px);line-height:1.5;text-align:left;background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;border-left:4px solid #4caf50"><span style="color:#4caf50;font-weight:900;font-size:12px">[나왔던 OX 퀴즈]</span><br><strong>Q.</strong> ${winnerQuiz.q}<br><span style="color:#ffd54f;font-weight:bold;font-size:clamp(12px,1.6vw,16px);margin-top:3px;display:inline-block">A. ${winnerQuiz.a?'⭕ (맞음)':'❌ (틀림)'}</span><br><span style="color:#a5d6a7;font-size:11px">${winnerQuiz.exp}</span></div>`}
+const loserInfoPanel=document.createElement('div');loserInfoPanel.className='info-panel';loserInfoPanel.innerHTML=`<div class="info-content" style="max-height:90%;overflow-y:auto"><div style="font-family:'Poor Story',sans-serif;font-size:clamp(18px,3vw,32px);margin-bottom:6px;color:#ffd54f;font-weight:900">🏆 ${winnerLabel}</div><div style="font-size:13px;color:#aaa;margin-bottom:8px;font-family:'Poor Story',sans-serif">이긴 팀이 퍼즐을 완성했어요! 🎉</div><div class="info-title" style="font-size:clamp(18px,2.5vw,26px)">${item?item.name:''}</div><div class="info-sciname">${item?item.sciName||'':''}</div><div class="info-desc" style="font-size:clamp(11px,1.4vw,14px);max-width:300px">${item?item.desc||'':''}</div>${winnerQuizHTML}<button class="diff-btn" onclick="document.getElementById('btn-home').click()" style="pointer-events:auto;margin-top:16px">🐸 다시 도전!</button></div>`;loserBoard.appendChild(loserInfoPanel);requestAnimationFrame(()=>loserInfoPanel.classList.add('visible'))}
+
+function showOriginalEndOverlay(code){if(gameState.timerIntv)clearInterval(gameState.timerIntv);AudioEngine.playFanfare();const endOverlay=document.getElementById('overlay-end'),winTitle=document.getElementById('win-title');winTitle.textContent=code==='draw'?'🤝 무승부!':code==='p1'?'🐸 개구리팀 승리!':'🦎 도롱뇽팀 승리!';endOverlay.classList.remove('hidden')}
+
+document.getElementById('btn-home').addEventListener('click',()=>{document.querySelectorAll('.info-panel').forEach(p=>p.remove());gameState.isPlaying=false;if(gameState.timerIntv)clearInterval(gameState.timerIntv);if(document.fullscreenElement){document.getElementById('overlay-start').classList.remove('hidden');document.getElementById('overlay-end').classList.add('hidden');document.getElementById('overlay-countdown').classList.add('hidden');document.getElementById('overlay-random-select').classList.add('hidden');document.getElementById('board-p1').innerHTML='';document.getElementById('board-p2').innerHTML='';document.getElementById('score-p1').textContent='0%';document.getElementById('score-p2').textContent='0%';document.getElementById('txt-timer').textContent='진행 시간';document.getElementById('timer-fill').style.width='0%'}else location.reload()});
+
+let currentViewerIndex=0;
+window.openAmphibianViewer=function(){AudioEngine.init();AudioEngine.playClack();currentViewerIndex=0;updateAmphibianViewer();document.getElementById('overlay-amphibian-viewer').classList.remove('hidden')};
+window.closeAmphibianViewer=function(){document.getElementById('overlay-amphibian-viewer').classList.add('hidden')};
+window.updateAmphibianViewer=function(){const item=amphibianDB[currentViewerIndex];if(!item)return;document.getElementById('viewer-img').src=`img/${item.file}`;document.getElementById('viewer-animal-name').textContent=item.name;document.getElementById('viewer-sci-name').textContent=item.sciName;document.getElementById('viewer-desc').textContent=item.desc;document.getElementById('viewer-index').textContent=`(${currentViewerIndex+1} / ${amphibianDB.length})`};
+window.prevAmphibian=function(){currentViewerIndex=(currentViewerIndex-1+amphibianDB.length)%amphibianDB.length;updateAmphibianViewer()};
+window.nextAmphibian=function(){currentViewerIndex=(currentViewerIndex+1)%amphibianDB.length;updateAmphibianViewer()};
+
+let oxModalState={questions:[],currentIndex:0,score:0,answered:false};
+window.openOxQuizModal=function(){AudioEngine.init();const shuffled=[...oxQuizDB].sort(()=>Math.random()-0.5);oxModalState.questions=shuffled.slice(0,10);oxModalState.currentIndex=0;oxModalState.score=0;oxModalState.answered=false;document.getElementById('overlay-ox-modal').classList.remove('hidden');document.getElementById('ox-result-box').classList.add('hidden');document.getElementById('ox-btn-row').style.display='';renderOxModalQuestion()};
+window.closeOxQuizModal=function(){document.getElementById('overlay-ox-modal').classList.add('hidden')};
+
+function renderOxModalQuestion(){const q=oxModalState.questions[oxModalState.currentIndex];const total=oxModalState.questions.length;document.getElementById('ox-q-number').textContent=`${oxModalState.currentIndex+1} / ${total}`;document.getElementById('ox-q-text').textContent=q.q;document.getElementById('ox-feedback-box').classList.add('hidden');document.getElementById('ox-feedback-box').textContent='';document.getElementById('ox-score-display').textContent=`현재 점수: ${oxModalState.score}점`;document.getElementById('ox-modal-btns').style.display='flex';document.getElementById('ox-next-btn').textContent=oxModalState.currentIndex<total-1?'다음 문제 →':'결과 보기 🐸';oxModalState.answered=false}
+
+window.answerOxModal=function(userAnswer){if(oxModalState.answered)return;oxModalState.answered=true;const q=oxModalState.questions[oxModalState.currentIndex];const correct=userAnswer===q.a;if(correct)oxModalState.score++;const feedbackBox=document.getElementById('ox-feedback-box');feedbackBox.classList.remove('hidden','correct','wrong');feedbackBox.classList.add(correct?'correct':'wrong');feedbackBox.innerHTML=`<div style="font-size:24px;margin-bottom:6px">${correct?'⭕ 정답!':'❌ 오답!'}</div><div>${q.exp}</div>`;document.getElementById('ox-score-display').textContent=`현재 점수: ${oxModalState.score}점`};
+
+window.nextOxQuestion=function(){if(!oxModalState.answered){alert('먼저 O 또는 X를 선택해주세요! 🐸');return}const total=oxModalState.questions.length;if(oxModalState.currentIndex<total-1){oxModalState.currentIndex++;renderOxModalQuestion()}else showOxResult()};
+
+function showOxResult(){const total=oxModalState.questions.length,score=oxModalState.score,pct=Math.round(score/total*100);document.getElementById('ox-modal-btns').style.display='none';document.getElementById('ox-feedback-box').classList.add('hidden');document.getElementById('ox-btn-row').style.display='none';document.getElementById('ox-result-box').classList.remove('hidden');let stars='⭐',title='아쉬워요! 다시 도전해봐요!';if(pct>=90){stars='🐸🐸🐸';title='양서류 박사님! 완벽해요!'}else if(pct>=70){stars='🐸🐸';title='잘 했어요! 거의 다 알아요!'}else if(pct>=50){stars='🐸';title='괜찮아요! 조금 더 공부해봐요!'}document.getElementById('ox-result-stars').textContent=stars;document.getElementById('ox-result-title').textContent=title;document.getElementById('ox-result-score').textContent=`${total}문제 중 ${score}개 정답! (${pct}점)`}
+
+window.restartOxQuiz=function(){openOxQuizModal()};
+
+(function init(){setAppHeight();initGallery()})();
+</script>
+</body>
+</html>
